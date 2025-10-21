@@ -5,6 +5,13 @@
 #include <cstring>
 #include <iostream>
 #include <stdio.h>
+#include <cstdint>
+#include <vector>
+
+struct Client {
+    SOCKET socket;
+    std::string name = "";                        
+};
 
 class Network
 {
@@ -24,7 +31,12 @@ private:
 private:
     SOCKET c_server_socket = INVALID_SOCKET;
     sockaddr_in c_server_addr;
-    SOCKET c_client_socket = INVALID_SOCKET;
+
+    fd_set c_readfds;
+    fd_set c_writefds;
+    fd_set c_exceptfds;
+
+    std::vector<Client*> c_client_list;
 };
 
 

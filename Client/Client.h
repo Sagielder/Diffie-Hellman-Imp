@@ -9,13 +9,13 @@ private:
     void CreateSocket();
     void SetupServerAddress();
     void SendConnectionRequest();
-    void SendData();
     void CloseSocket();
 public:
     Client();
     ~Client();
     void Start();
     void End();
+    void SendData(const char * string_message);
 private:
     sockaddr_in c_server_addr;
     SOCKET c_client_socket = INVALID_SOCKET;

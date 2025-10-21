@@ -30,11 +30,10 @@ void Client::SendConnectionRequest()
     }
 }
 
-void Client::SendData()
+void Client::SendData(const char* string_message)
 {
     std::cout << "Sending message..." << std::endl;
-    const char* message = "Hello, server!";
-    int sent = send(c_client_socket, message, strlen(message), 0);
+    int sent = send(c_client_socket, string_message, strlen(string_message), 0);
     if (sent == SOCKET_ERROR) {
         std::cout << "ERROR: Send failed! Error: " << WSAGetLastError() << std::endl;
     } else {
@@ -68,7 +67,6 @@ void Client::Start()
     CreateSocket();
     SetupServerAddress();
     SendConnectionRequest();
-    SendData();
 }
 
 void Client::End()

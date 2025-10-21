@@ -11,20 +11,51 @@ Network::Network()
 
 Network::~Network()
 {
-    if (c_client_socket != INVALID_SOCKET)
+    for (size_t i = 0; i < c_client_list.size(); i++)
     {
-        CloseSocket();
+        closesocket(c_client_list[i]->socket);
+        free(c_client_list[i]);
     }
     WSACleanup();
 }
+
 
 void Network::Start()
 {
     CreateSocket();
     BindSocket();
     Listen();
-    AcceptClientConnection();
-    DataFromClient();
+    
+    std::cout << "Server is running. Press Ctrl+C to stop." << std::endl;
+    
+    // Keep accepting clients in a loop
+    while (true)
+    {
+        FD_ZERO(&c_readfds);
+
+        FD_SET(c_server_socket, &c_readfds);
+
+        for (Client* client: c_client_list)
+        {
+            FD_SET(client->socket, &c_readfds);
+        }
+
+        size_t max_sd = c_server_socket;
+        for (Client* client: c_client_list)
+            if (client->socket > max_sd) max_sd = client->socket;
+
+        int activity = select(max_sd + 1, &c_readfds, nullptr, nullptr, nullptr);
+
+        if (activity < 0) {
+            std::cout << "select() error: " << WSAGetLastError() << std::endl;
+            break;
+        }
+        AcceptClientConnection();
+
+
+        DataFromClient();
+        
+    }
 }
 
 void Network::End()
@@ -41,6 +72,8 @@ void Network::CreateSocket()
     } else {
         std::cout << "Socket created successfully" << std::endl;
     }
+
+
 }
 
 void Network::BindSocket()
@@ -71,20 +104,54 @@ void Network::Listen()
 
 void Network::AcceptClientConnection()
 {
-    std::cout << "Waiting for client connection..." << std::endl;
-    c_client_socket = accept(c_server_socket, nullptr, nullptr);
-    if (c_client_socket == INVALID_SOCKET) {
-        std::cout << "ERROR: Accept failed! Error: " << WSAGetLastError() << std::endl;
-    } else {
-        std::cout << "Client connected!" << std::endl;
+    if (FD_ISSET(c_server_socket, &c_readfds))
+    {
+        SOCKET new_client_socket = accept(c_server_socket, nullptr, nullptr);
+        if (new_client_socket != INVALID_SOCKET)
+        {
+            Client* newClient = new Client();
+            newClient->socket = new_client_socket;
+            c_client_list.push_back(newClient);
+        }
     }
 }
 
 void Network::DataFromClient()
 {
-    char buffer[1024] = {0};
-    recv(c_client_socket, buffer, sizeof(buffer), 0);
-    std::cout << "Message from client: " << buffer << std::endl;
+    for (size_t i = 0; i < c_client_list.size(); i++)
+    {
+        Client* client = c_client_list[i];
+        if (FD_ISSET(client->socket, &c_readfds))
+        {
+            char buffer[1024];
+            int bytes = recv(client->socket, buffer, sizeof(buffer), 0);
+            if (bytes <= 0) {
+                if (client->name == "")
+                {
+                    std::cout << "Client disconnected." << std::endl;
+                }
+                else
+                {
+                    std::cout << client->name << " disconnected." << std::endl;
+                }
+                closesocket(client->socket);
+                c_client_list.erase(c_client_list.begin() + i);
+                --i;
+            } else {
+                buffer[bytes] = '\0';
+                if (client->name.empty())
+                {
+                    client->name = buffer;
+                    std::cout << "Set Client Port (" << client->socket << ")'s name to " << client->name << std::endl;
+                }
+                else
+                {
+                    std::cout << "Received from " << client->name << " :" << buffer << std::endl;
+                }
+            }
+
+        }
+    }
 }
 
 void Network::CloseSocket()
