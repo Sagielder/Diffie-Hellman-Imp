@@ -5,7 +5,6 @@
 #include <cstring>
 #include <iostream>
 #include <stdio.h>
-#include <unistd.h>
 
 class Network
 {
@@ -23,9 +22,9 @@ private:
     void CloseSocket();
 
 private:
-    SOCKET c_server_socket = NULL;
+    SOCKET c_server_socket = INVALID_SOCKET;
     sockaddr_in c_server_addr;
-    int c_client_socket;
+    SOCKET c_client_socket = INVALID_SOCKET;
 };
 
 

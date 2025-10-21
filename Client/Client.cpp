@@ -2,10 +2,16 @@
 
 void Client::CreateSocket()
 {
+    std::cout << "Creating client socket..." << std::endl;
     c_client_socket = socket(AF_INET, SOCK_STREAM, 0);
+    if (c_client_socket == INVALID_SOCKET) {
+        std::cout << "ERROR: Socket creation failed! Error: " << WSAGetLastError() << std::endl;
+    } else {
+        std::cout << "Socket created" << std::endl;
+    }
 }
 
-void Client::BindSocket()
+void Client::SetupServerAddress()
 {
     c_server_addr.sin_family = AF_INET;
     c_server_addr.sin_port = htons(8080);
@@ -14,38 +20,53 @@ void Client::BindSocket()
 
 void Client::SendConnectionRequest()
 {
-    connect(c_client_socket, (struct sockaddr*)&c_server_addr,
+    std::cout << "Connecting to server..." << std::endl;
+    int result = connect(c_client_socket, (struct sockaddr*)&c_server_addr,
             sizeof(c_server_addr));
+    if (result == SOCKET_ERROR) {
+        std::cout << "ERROR: Connect failed! Error: " << WSAGetLastError() << std::endl;
+    } else {
+        std::cout << "Connected to server!" << std::endl;
+    }
 }
 
 void Client::SendData()
 {
+    std::cout << "Sending message..." << std::endl;
     const char* message = "Hello, server!";
-    send(c_client_socket, message, strlen(message), 0);
+    int sent = send(c_client_socket, message, strlen(message), 0);
+    if (sent == SOCKET_ERROR) {
+        std::cout << "ERROR: Send failed! Error: " << WSAGetLastError() << std::endl;
+    } else {
+        std::cout << "Sent " << sent << " bytes" << std::endl;
+    }
 }
 
 void Client::CloseSocket()
 {
-    close(c_client_socket);
-    c_client_socket = -1;
+    closesocket(c_client_socket);
+    c_client_socket = INVALID_SOCKET;
 }
 
 Client::Client()
 {
+    WSADATA wsaData;
+    WSAStartup(MAKEWORD(2,2), &wsaData);
 }
 
 Client::~Client()
 {
-    if (c_client_socket != -1)
+    if (c_client_socket != INVALID_SOCKET)
     {
         CloseSocket();
     }
+    WSACleanup();
 }
 
 void Client::Start()
 {
     CreateSocket();
-    BindSocket();
+    SetupServerAddress();
     SendConnectionRequest();
     SendData();
 }

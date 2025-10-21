@@ -11,10 +11,11 @@ Network::Network()
 
 Network::~Network()
 {
-    if (c_client_socket != NULL)
+    if (c_client_socket != INVALID_SOCKET)
     {
         CloseSocket();
     }
+    WSACleanup();
 }
 
 void Network::Start()
@@ -33,29 +34,50 @@ void Network::End()
 
 void Network::CreateSocket()
 {
-    SOCKET server_socket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-    if (server_socket == INVALID_SOCKET) {
-        // Handle error with WSAGetLastError()
+    std::cout << "Creating socket..." << std::endl;
+    c_server_socket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+    if (c_server_socket == INVALID_SOCKET) {
+        std::cout << "ERROR: Socket creation failed! Error: " << WSAGetLastError() << std::endl;
+    } else {
+        std::cout << "Socket created successfully" << std::endl;
     }
 }
 
 void Network::BindSocket()
 {
+    std::cout << "Binding socket to 127.0.0.1:8080..." << std::endl;
     c_server_addr.sin_family = AF_INET;
     c_server_addr.sin_addr.s_addr = inet_addr("127.0.0.1");
     c_server_addr.sin_port = htons(8080);
 
-    bind(c_server_socket, (sockaddr*)&c_server_addr, sizeof(c_server_addr));
+    int result = bind(c_server_socket, (sockaddr*)&c_server_addr, sizeof(c_server_addr));
+    if (result == SOCKET_ERROR) {
+        std::cout << "ERROR: Bind failed! Error: " << WSAGetLastError() << std::endl;
+    } else {
+        std::cout << "Bind successful" << std::endl;
+    }
 }
 
 void Network::Listen()
 {
-    listen(c_server_socket, SOMAXCONN);
+    std::cout << "Listening for connections..." << std::endl;
+    int result = listen(c_server_socket, SOMAXCONN);
+    if (result == SOCKET_ERROR) {
+        std::cout << "ERROR: Listen failed! Error: " << WSAGetLastError() << std::endl;
+    } else {
+        std::cout << "Server listening on 127.0.0.1:8080" << std::endl;
+    }
 }
 
 void Network::AcceptClientConnection()
 {
+    std::cout << "Waiting for client connection..." << std::endl;
     c_client_socket = accept(c_server_socket, nullptr, nullptr);
+    if (c_client_socket == INVALID_SOCKET) {
+        std::cout << "ERROR: Accept failed! Error: " << WSAGetLastError() << std::endl;
+    } else {
+        std::cout << "Client connected!" << std::endl;
+    }
 }
 
 void Network::DataFromClient()
@@ -67,6 +89,6 @@ void Network::DataFromClient()
 
 void Network::CloseSocket()
 {
-    close(c_server_socket);
-    c_server_socket = NULL;
+    closesocket(c_server_socket);
+    c_server_socket = INVALID_SOCKET;
 }
