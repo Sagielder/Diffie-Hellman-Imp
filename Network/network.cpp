@@ -1,4 +1,34 @@
 #include "network.h"
+#include <sstream>
+
+
+Command parseCommand(const char* buffer, int length)
+{
+    Command cmd;
+    
+    std::string data(buffer, length);
+    std::istringstream iss(data);
+    
+    std::string firstWord;
+    iss >> firstWord;
+    
+    if (firstWord == "/send")
+    {
+        cmd.commandType = CommandType::SEND;
+        iss >> cmd.arg1;  // recipient
+        iss >> cmd.arg2; // payload
+        if (cmd.arg1.empty() || cmd.arg2.empty()) // cant be empty (for now)
+        {
+            cmd.commandType = CommandType::INVALID;
+        }
+    }
+    else if (firstWord == "/help")
+    {
+        cmd.commandType = CommandType::HELP;
+    }
+    
+    return cmd;
+}
 
 
 Network::Network()
@@ -116,6 +146,20 @@ void Network::AcceptClientConnection()
     }
 }
 
+void Network::GetStringListUserInNetwork(std::string& strRet)
+{
+    strRet = "Current Users in Network"; 
+    for (Client* client : c_client_list)
+    {
+        strRet += "\n- " + client->name;
+    }
+
+}
+
+void Network::HandleHelpCommand()
+{
+
+}
 void Network::DataFromClient()
 {
     for (size_t i = 0; i < c_client_list.size(); i++)
@@ -124,8 +168,8 @@ void Network::DataFromClient()
         if (FD_ISSET(client->socket, &c_readfds))
         {
             char buffer[1024];
-            int bytes = recv(client->socket, buffer, sizeof(buffer), 0);
-            if (bytes <= 0) {
+            int bytesReceived = recv(client->socket, buffer, sizeof(buffer), 0);
+            if (bytesReceived <= 0) {
                 if (client->name == "")
                 {
                     std::cout << "Client disconnected." << std::endl;
@@ -135,18 +179,45 @@ void Network::DataFromClient()
                     std::cout << client->name << " disconnected." << std::endl;
                 }
                 closesocket(client->socket);
+                map_name_client.erase(client->name);
                 c_client_list.erase(c_client_list.begin() + i);
                 --i;
             } else {
-                buffer[bytes] = '\0';
+                buffer[bytesReceived] = '\0';
                 if (client->name.empty())
                 {
                     client->name = buffer;
                     std::cout << "Set Client Port (" << client->socket << ")'s name to " << client->name << std::endl;
+                    map_name_client.insert({client->name, client});
+                    std::string string_user_list;
+                    GetStringListUserInNetwork(string_user_list);
+                    DataToClient(client, string_user_list.c_str());
                 }
                 else
                 {
                     std::cout << "Received from " << client->name << " :" << buffer << std::endl;
+                    
+                    Command command;
+                    command = parseCommand(buffer, bytesReceived);
+
+                    if (command.commandType == CommandType::INVALID)
+                    {
+                        DataToClient(client, "Invalid Commnad");
+                    }
+                    else if (command.commandType == CommandType::SEND)
+                    {
+                        std::unordered_map<std::string, Client*>::iterator mapItor;
+                        mapItor = map_name_client.find(command.arg1);
+                        if (mapItor == map_name_client.end())
+                        {
+                            DataToClient(client, "User not found");
+                        }
+                        else
+                        {
+                            Client* recipient = mapItor->second;
+                            DataToClient(recipient, ("[From "+ client->name +"]: "+ command.arg2).c_str());
+                        }
+                    }
                 }
             }
 
@@ -158,4 +229,16 @@ void Network::CloseSocket()
 {
     closesocket(c_server_socket);
     c_server_socket = INVALID_SOCKET;
+}
+
+
+void Network::DataToClient(Client* client, const char* string_message_content)
+{
+    std::cout << "Sending message..." << std::endl;
+    int sent = send(client->socket, string_message_content, strlen(string_message_content), 0);
+    if (sent == SOCKET_ERROR) {
+        std::cout << "ERROR: Send failed! Error: " << WSAGetLastError() << std::endl;
+    } else {
+        std::cout << "Sent " << sent << " bytes" << std::endl;
+    }
 }

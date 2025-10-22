@@ -7,6 +7,20 @@
 #include <stdio.h>
 #include <cstdint>
 #include <vector>
+#include <unordered_map>
+
+enum CommandType {
+    INVALID, SEND, HELP
+};
+
+struct Command
+{
+    CommandType commandType = CommandType::INVALID;
+    std::string arg1;     
+    std::string arg2;
+};
+
+
 
 struct Client {
     SOCKET socket;
@@ -25,8 +39,11 @@ private:
     void BindSocket();
     void Listen();
     void AcceptClientConnection();
+    void GetStringListUserInNetwork(std::string& strRet);
+    void HandleHelpCommand();
     void DataFromClient();
     void CloseSocket();
+    void DataToClient(Client* client, const char* string_message_content);
 
 private:
     SOCKET c_server_socket = INVALID_SOCKET;
@@ -35,7 +52,7 @@ private:
     fd_set c_readfds;
     fd_set c_writefds;
     fd_set c_exceptfds;
-
+    std::unordered_map<std::string, Client*> map_name_client;
     std::vector<Client*> c_client_list;
 };
 

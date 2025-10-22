@@ -1,5 +1,6 @@
 #include "Client.h"
 #include <string>
+#include <thread>
 
 bool InsensitiveStringCompare(std::string str1, std::string str2)
 {
@@ -14,23 +15,46 @@ bool InsensitiveStringCompare(std::string str1, std::string str2)
     return true;
 }
 
+void inputLoopThread(Client* client)
+{
+    std::string inputString;
+    while (true)
+    {
+        std::cout << "Enter Your message, enter 'Ctrl+C' to end session" << std::endl;
+        std::getline(std::cin, inputString);
+        client->SendData(inputString.c_str());
+        inputString.clear();
+    }
+}
 int main()
 {
     Client client;
-    std::string inputString;
     std::string client_name;
     std::cout << "Enter Your Username" << std::endl;
-    std::cin >> client_name;
+    std::getline(std::cin, client_name);
     client.Start();
     client.SendData(client_name.c_str());
     client_name.clear();
     client_name.shrink_to_fit();
-    while (true)
-    {
-        std::cout << "Enter Your message, enter 'Ctrl+C' to end session" << std::endl;
-        std::cin >> inputString;
-        client.SendData(inputString.c_str());
-        inputString.clear();
+
+    std::thread inputWorkerThread(inputLoopThread, &client);
+    inputWorkerThread.detach();
+
+    char buffer[1024];
+    while (true) {
+        int bytes = recv(client.c_client_socket, buffer, sizeof(buffer) - 1, 0);
+        if (bytes > 0) {
+            buffer[bytes] = '\0';
+            std::cout << "[Server] " << buffer << std::endl;
+        } else if (bytes == 0) {
+            std::cout << "Server disconnected." << std::endl;
+            break;
+        } else {
+            std::cerr << "recv() failed: " << WSAGetLastError() << std::endl;
+            break;
+        }
     }
+
+    
     return 0;
 }

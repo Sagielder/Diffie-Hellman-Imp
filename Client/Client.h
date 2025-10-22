@@ -16,7 +16,7 @@ public:
     void Start();
     void End();
     void SendData(const char * string_message);
-private:
+public:
     sockaddr_in c_server_addr;
     SOCKET c_client_socket = INVALID_SOCKET;
 };
