@@ -2,12 +2,12 @@
 
 void Client::CreateSocket()
 {
-    std::cout << "Creating client socket..." << std::endl;
+    Logger::debug("Creating client socket...");
     c_client_socket = socket(AF_INET, SOCK_STREAM, 0);
     if (c_client_socket == INVALID_SOCKET) {
-        std::cout << "ERROR: Socket creation failed! Error: " << WSAGetLastError() << std::endl;
+        Logger::debug("ERROR: Socket creation failed! Error: " + WSAGetLastError());
     } else {
-        std::cout << "Socket created" << std::endl;
+        Logger::debug("Socket created");
     }
 }
 
@@ -20,24 +20,24 @@ void Client::SetupServerAddress()
 
 void Client::SendConnectionRequest()
 {
-    std::cout << "Connecting to server..." << std::endl;
+    Logger::info("Connecting to server...");
     int result = connect(c_client_socket, (struct sockaddr*)&c_server_addr,
             sizeof(c_server_addr));
     if (result == SOCKET_ERROR) {
-        std::cout << "ERROR: Connect failed! Error: " << WSAGetLastError() << std::endl;
+        Logger::info("ERROR: Connect failed! Error: " + WSAGetLastError());
     } else {
-        std::cout << "Connected to server!" << std::endl;
+        Logger::info("Connected to server!");
     }
 }
 
 void Client::SendData(const char* string_message)
 {
-    std::cout << "Sending message..." << std::endl;
+    Logger::debug("Sending message...");
     int sent = send(c_client_socket, string_message, strlen(string_message), 0);
     if (sent == SOCKET_ERROR) {
-        std::cout << "ERROR: Send failed! Error: " << WSAGetLastError() << std::endl;
+        Logger::debug("ERROR: Send failed! Error: " + WSAGetLastError());
     } else {
-        std::cout << "Sent " << sent << " bytes" << std::endl;
+        Logger::debug("Sent " + std::to_string(sent) + " bytes");
     }
 }
 

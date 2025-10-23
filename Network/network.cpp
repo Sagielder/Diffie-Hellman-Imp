@@ -56,7 +56,7 @@ void Network::Start()
     BindSocket();
     Listen();
     
-    std::cout << "Server is running. Press Ctrl+C to stop." << std::endl;
+    Logger::info("Server is running. Press Ctrl+C to stop.");
     
     // Keep accepting clients in a loop
     while (true)
@@ -77,7 +77,7 @@ void Network::Start()
         int activity = select(max_sd + 1, &c_readfds, nullptr, nullptr, nullptr);
 
         if (activity < 0) {
-            std::cout << "select() error: " << WSAGetLastError() << std::endl;
+            Logger::debug("select() error: " + WSAGetLastError());
             break;
         }
         AcceptClientConnection();
@@ -95,12 +95,12 @@ void Network::End()
 
 void Network::CreateSocket()
 {
-    std::cout << "Creating socket..." << std::endl;
+    Logger::debug("Creating socket...");
     c_server_socket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
     if (c_server_socket == INVALID_SOCKET) {
-        std::cout << "ERROR: Socket creation failed! Error: " << WSAGetLastError() << std::endl;
+        Logger::debug("ERROR: Socket creation failed! Error: " + WSAGetLastError());
     } else {
-        std::cout << "Socket created successfully" << std::endl;
+        Logger::debug("Socket created successfully");
     }
 
 
@@ -108,27 +108,27 @@ void Network::CreateSocket()
 
 void Network::BindSocket()
 {
-    std::cout << "Binding socket to 127.0.0.1:8080..." << std::endl;
+    Logger::debug("Binding socket to 127.0.0.1:8080...");
     c_server_addr.sin_family = AF_INET;
     c_server_addr.sin_addr.s_addr = inet_addr("127.0.0.1");
     c_server_addr.sin_port = htons(8080);
 
     int result = bind(c_server_socket, (sockaddr*)&c_server_addr, sizeof(c_server_addr));
     if (result == SOCKET_ERROR) {
-        std::cout << "ERROR: Bind failed! Error: " << WSAGetLastError() << std::endl;
+        Logger::debug("ERROR: Bind failed! Error: " + WSAGetLastError());
     } else {
-        std::cout << "Bind successful" << std::endl;
+        Logger::debug("Bind successful");
     }
 }
 
 void Network::Listen()
 {
-    std::cout << "Listening for connections..." << std::endl;
+    Logger::debug("Listening for connections...");
     int result = listen(c_server_socket, SOMAXCONN);
     if (result == SOCKET_ERROR) {
-        std::cout << "ERROR: Listen failed! Error: " << WSAGetLastError() << std::endl;
+        Logger::debug("ERROR: Listen failed! Error: " + WSAGetLastError());
     } else {
-        std::cout << "Server listening on 127.0.0.1:8080" << std::endl;
+        Logger::debug("Server listening on 127.0.0.1:8080");
     }
 }
 
@@ -172,11 +172,11 @@ void Network::DataFromClient()
             if (bytesReceived <= 0) {
                 if (client->name == "")
                 {
-                    std::cout << "Client disconnected." << std::endl;
+                    Logger::debug("Client disconnected.");
                 }
                 else
                 {
-                    std::cout << client->name << " disconnected." << std::endl;
+                    Logger::debug(client->name + " disconnected.");
                 }
                 closesocket(client->socket);
                 map_name_client.erase(client->name);
@@ -187,7 +187,7 @@ void Network::DataFromClient()
                 if (client->name.empty())
                 {
                     client->name = buffer;
-                    std::cout << "Set Client Port (" << client->socket << ")'s name to " << client->name << std::endl;
+                    Logger::debug("Set Client Port (" + std::to_string(client->socket) + ")'s name to " + client->name);
                     map_name_client.insert({client->name, client});
                     std::string string_user_list;
                     GetStringListUserInNetwork(string_user_list);
@@ -195,7 +195,7 @@ void Network::DataFromClient()
                 }
                 else
                 {
-                    std::cout << "Received from " << client->name << " :" << buffer << std::endl;
+                    Logger::debug("Received from " + client->name + " :" + buffer);
                     
                     Command command;
                     command = parseCommand(buffer, bytesReceived);
@@ -234,11 +234,11 @@ void Network::CloseSocket()
 
 void Network::DataToClient(Client* client, const char* string_message_content)
 {
-    std::cout << "Sending message..." << std::endl;
+    Logger::debug("Sending message...");
     int sent = send(client->socket, string_message_content, strlen(string_message_content), 0);
     if (sent == SOCKET_ERROR) {
-        std::cout << "ERROR: Send failed! Error: " << WSAGetLastError() << std::endl;
+        Logger::debug("ERROR: Send failed! Error: " + WSAGetLastError());
     } else {
-        std::cout << "Sent " << sent << " bytes" << std::endl;
+        Logger::debug("Sent " + std::to_string(sent) + " bytes");
     }
 }

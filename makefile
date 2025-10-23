@@ -36,23 +36,3 @@ client: $(CLIENT_EXE)
 clean:
 	del /Q $(NETWORK_EXE) $(CLIENT_EXE) 2>nul || echo "Clean complete"
 
-# Run network process
-run-network: $(NETWORK_EXE)
-	./$(NETWORK_EXE)
-
-# Run client
-run-client: $(CLIENT_EXE)
-	./$(CLIENT_EXE)
-
-# Help target
-help:
-	@echo Available targets:
-	@echo   all          - Build both network and client (default)
-	@echo   network      - Build only network process
-	@echo   client       - Build only client
-	@echo   clean        - Remove executables
-	@echo   run-network  - Build and run network process
-	@echo   run-client   - Build and run client
-	@echo   help         - Show this help message
-
-.PHONY: all network client clean run-network run-client help

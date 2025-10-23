@@ -1,7 +1,7 @@
 #include "Client.h"
 #include <string>
 #include <thread>
-
+#include <logger.h>
 bool InsensitiveStringCompare(std::string str1, std::string str2)
 {
     if (str1.length() != str2.length()) {
@@ -26,8 +26,18 @@ void inputLoopThread(Client* client)
         inputString.clear();
     }
 }
-int main()
+int main(int argc, char* argv[])
 {
+    bool debugMode = false;
+    
+    for (int i = 1; i < argc; ++i) {
+        std::string arg = argv[i];
+        if (arg == "--debug" || arg == "-d") {
+            debugMode = true;
+        }
+    }
+
+    Logger::setDebugMode(debugMode);
     Client client;
     std::string client_name;
     std::cout << "Enter Your Username" << std::endl;
@@ -47,10 +57,10 @@ int main()
             buffer[bytes] = '\0';
             std::cout << "[Server] " << buffer << std::endl;
         } else if (bytes == 0) {
-            std::cout << "Server disconnected." << std::endl;
+            Logger::info("Server disconnected.");
             break;
         } else {
-            std::cerr << "recv() failed: " << WSAGetLastError() << std::endl;
+            Logger::debug("recv() failed: " + WSAGetLastError());
             break;
         }
     }

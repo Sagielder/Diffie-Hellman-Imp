@@ -2,6 +2,7 @@
 #define CLIENT_H
 #include <winsock2.h>
 #include <iostream>
+#include <logger.h>
 #include <ws2tcpip.h>
 class Client
 {

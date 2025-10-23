@@ -8,8 +8,11 @@
 #include <cstdint>
 #include <vector>
 #include <unordered_map>
+#include <logger.h>
+#include <string>
+#include <sstream>
 
-enum CommandType {
+enum class CommandType {
     INVALID, SEND, HELP
 };
 
